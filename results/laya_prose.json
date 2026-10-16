@@ -1,0 +1,90 @@
+{
+  "env": "stub",
+  "reflex": "laya",
+  "supervisor": null,
+  "policy_health": {
+    "policy": "laya",
+    "available": true,
+    "vision": false,
+    "detail": "",
+    "exe": "G:/dev/AI/laya/layabin/laya.exe",
+    "model": "G:/dev/AI/laya/laya_multilingual_q8_0.gguf",
+    "threshold": 0.5,
+    "state_format": "prose",
+    "stats": {
+      "calls": 1575,
+      "total_ms": 14562.70694732666,
+      "errors": 0,
+      "last_ms": 5.507469177246094
+    }
+  },
+  "state_format": "prose",
+  "threshold": 0.5,
+  "episodes": [
+    {
+      "env": "stub",
+      "reflex": "laya",
+      "supervisor": "laya",
+      "steps": 500,
+      "score": 0,
+      "decisions": 500,
+      "mean_latency_ms": 11.7,
+      "p95_latency_ms": 21.0,
+      "cost_usd": 0,
+      "errors": 0,
+      "actions": {
+        "hold": 500
+      },
+      "stop_reason": "max_steps",
+      "episode": 0,
+      "seed": 0
+    },
+    {
+      "env": "stub",
+      "reflex": "laya",
+      "supervisor": "laya",
+      "steps": 500,
+      "score": 0,
+      "decisions": 500,
+      "mean_latency_ms": 6.6,
+      "p95_latency_ms": 11.1,
+      "cost_usd": 0,
+      "errors": 0,
+      "actions": {
+        "hold": 486,
+        "left": 14
+      },
+      "stop_reason": "max_steps",
+      "episode": 1,
+      "seed": 1
+    },
+    {
+      "env": "stub",
+      "reflex": "laya",
+      "supervisor": "laya",
+      "steps": 500,
+      "score": 0,
+      "decisions": 500,
+      "mean_latency_ms": 6.5,
+      "p95_latency_ms": 10.0,
+      "cost_usd": 0,
+      "errors": 0,
+      "actions": {
+        "hold": 500
+      },
+      "stop_reason": "max_steps",
+      "episode": 2,
+      "seed": 2
+    }
+  ],
+  "score_mean": 0,
+  "score_spread": [
+    0,
+    0,
+    0
+  ],
+  "score_stdev": 0.0,
+  "mean_latency_ms": 8.3,
+  "cost_usd": 0,
+  "errors": 0
+}

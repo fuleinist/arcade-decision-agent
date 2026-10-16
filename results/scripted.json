@@ -1,0 +1,91 @@
+{
+  "env": "stub",
+  "reflex": "scripted",
+  "supervisor": null,
+  "policy_health": {
+    "policy": "scripted",
+    "available": true,
+    "vision": false,
+    "detail": ""
+  },
+  "state_format": "prose",
+  "threshold": 0.5,
+  "episodes": [
+    {
+      "env": "stub",
+      "reflex": "scripted",
+      "supervisor": "scripted",
+      "steps": 500,
+      "score": 4100,
+      "decisions": 0,
+      "mean_latency_ms": null,
+      "p95_latency_ms": null,
+      "cost_usd": 0,
+      "errors": 0,
+      "actions": {
+        "fire": 202,
+        "right_fire": 15,
+        "right": 134,
+        "left": 129,
+        "left_fire": 20
+      },
+      "stop_reason": "max_steps",
+      "episode": 0,
+      "seed": 0
+    },
+    {
+      "env": "stub",
+      "reflex": "scripted",
+      "supervisor": "scripted",
+      "steps": 500,
+      "score": 4200,
+      "decisions": 0,
+      "mean_latency_ms": null,
+      "p95_latency_ms": null,
+      "cost_usd": 0,
+      "errors": 0,
+      "actions": {
+        "right": 117,
+        "right_fire": 23,
+        "fire": 220,
+        "left": 123,
+        "left_fire": 17
+      },
+      "stop_reason": "max_steps",
+      "episode": 1,
+      "seed": 1
+    },
+    {
+      "env": "stub",
+      "reflex": "scripted",
+      "supervisor": "scripted",
+      "steps": 500,
+      "score": 4200,
+      "decisions": 0,
+      "mean_latency_ms": null,
+      "p95_latency_ms": null,
+      "cost_usd": 0,
+      "errors": 0,
+      "actions": {
+        "right_fire": 25,
+        "fire": 224,
+        "right": 111,
+        "left": 124,
+        "left_fire": 16
+      },
+      "stop_reason": "max_steps",
+      "episode": 2,
+      "seed": 2
+    }
+  ],
+  "score_mean": 4166.7,
+  "score_spread": [
+    4100,
+    4200,
+    4200
+  ],
+  "score_stdev": 47.1,
+  "mean_latency_ms": null,
+  "cost_usd": 0,
+  "errors": 0
+}

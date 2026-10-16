@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>arcade decision agent</title>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --line:#2b333d; --fg:#e6edf3; --dim:#8b949e;
+          --accent:#58a6ff; --good:#3fb950; --warn:#d29922; --bad:#f85149; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:14px/1.45 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif; }
+  header { display:flex; gap:16px; align-items:center; flex-wrap:wrap;
+           padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+  h1 { font-size:15px; margin:0; font-weight:600; letter-spacing:.02em; }
+  h1 span { color:var(--dim); font-weight:400; }
+  label { color:var(--dim); font-size:12px; }
+  select,input[type=number],input[type=text],button {
+    background:#0b0f14; color:var(--fg); border:1px solid var(--line); border-radius:6px;
+    padding:4px 8px; font:inherit; font-size:12px; }
+  button { cursor:pointer; }
+  button.primary { background:var(--accent); color:#04121f; border-color:var(--accent); font-weight:600; }
+  button.danger { border-color:var(--bad); color:var(--bad); }
+  button:disabled { opacity:.45; cursor:default; }
+  main { display:grid; grid-template-columns:minmax(360px,1fr) minmax(360px,1fr); gap:14px; padding:14px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .panel h2 { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim);
+              margin:0 0 8px; font-weight:600; }
+  .screen { width:100%; background:#000; border:1px solid var(--line); border-radius:8px;
+            image-rendering:pixelated; display:block; min-height:120px; }
+  pre.ascii { margin:0; font:11px/1.05 ui-monospace,Consolas,monospace; color:#7ee787;
+              background:#000; border:1px solid var(--line); border-radius:8px; padding:8px; overflow:auto; }
+  .prose { font-size:13px; background:#0b0f14; border:1px solid var(--line); border-radius:8px;
+           padding:10px; min-height:44px; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:2px 10px; font-size:12px; margin-top:8px; }
+  .kv div:nth-child(odd) { color:var(--dim); }
+  .bars { margin-top:10px; display:grid; gap:5px; }
+  .bar { display:grid; grid-template-columns:78px 1fr 46px; align-items:center; gap:8px; font-size:11px; }
+  .bar .track { height:9px; background:#0b0f14; border:1px solid var(--line); border-radius:5px; overflow:hidden; }
+  .bar .fill { height:100%; background:var(--accent); transition:width .1s linear; }
+  .bar .fill.hot { background:var(--good); }
+  .bar .num { text-align:right; color:var(--dim); font-variant-numeric:tabular-nums; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:10px; }
+  .kpi { background:#0b0f14; border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+  .kpi b { display:block; font-size:19px; font-variant-numeric:tabular-nums; }
+  .kpi span { color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:.07em; }
+  table { width:100%; border-collapse:collapse; font-size:11.5px; font-variant-numeric:tabular-nums; }
+  th,td { text-align:left; padding:3px 6px; border-bottom:1px solid #1d232c; white-space:nowrap; }
+  th { color:var(--dim); font-weight:500; }
+  .log { max-height:280px; overflow:auto; }
+  .src-scripted{color:var(--dim)} .src-laya{color:var(--good)} .src-jev{color:var(--accent)}
+  .src-luna{color:var(--warn)} .src-manual{color:#ff7b72} .src-none{color:var(--dim)}
+  .mode { padding:1px 7px; border-radius:999px; border:1px solid var(--line); font-size:11px; }
+  .mode.dodge { border-color:var(--warn); color:var(--warn); }
+  .pad { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:8px; }
+  .pad button { padding:8px 0; }
+  .muted { color:var(--dim); }
+  .banner { padding:6px 16px; font-size:12px; border-bottom:1px solid var(--line); display:none; }
+  .banner.err { display:block; background:#3d1113; color:#ffb4ab; }
+  .banner.ok { display:block; background:#0f2417; color:#8ff0a4; }
+</style>
+</head>
+<body>
+<header>
+  <h1>arcade decision agent <span>· laya reflex + jev/luna supervisor</span></h1>
+  <label>env <select id="env"><option>stub</option><option>page</option></select></label>
+  <label>policy <select id="policy"><option>scripted</option><option>laya</option><option>jev</option><option>luna</option></select></label>
+  <label>supervisor <select id="supervisor"><option value="">none</option><option>laya</option><option>jev</option><option>luna</option></select></label>
+  <label>state <select id="state_format"><option>prose</option><option>json</option></select></label>
+  <label>thr <input id="threshold" type="number" step="0.05" min="0" max="1" value="0.5" style="width:64px"></label>
+  <label>steps <input id="steps" type="number" step="50" min="10" value="400" style="width:72px"></label>
+  <label>every <input id="supervisor_every" type="number" step="5" min="0" value="20" style="width:60px"></label>
+  <label>hold ms <input id="hold_ms" type="number" step="10" min="0" value="60" style="width:64px"></label>
+  <button id="start" class="primary">start</button>
+  <button id="stop" class="danger" disabled>stop</button>
+</header>
+<div id="banner" class="banner"></div>
+<main>
+  <section class="panel">
+    <h2>screen</h2>
+    <img id="frame" class="screen" alt="game frame">
+    <pre id="ascii" class="ascii" style="display:none"></pre>
+    <h2 style="margin-top:12px">KPI</h2>
+    <div class="kpis">
+      <div class="kpi"><b id="k-score">0</b><span>score</span></div>
+      <div class="kpi"><b id="k-step">0</b><span>steps</span></div>
+      <div class="kpi"><b id="k-dec">0</b><span>decisions</span></div>
+      <div class="kpi"><b id="k-lat">–</b><span>mean ms</span></div>
+      <div class="kpi"><b id="k-cost">$0</b><span>cost</span></div>
+      <div class="kpi"><b id="k-err">0</b><span>errors</span></div>
+    </div>
+    <h2 style="margin-top:12px">manual override</h2>
+    <div class="pad">
+      <button data-act="left_fire">↖ fire</button><button data-act="fire">fire</button><button data-act="right_fire">↗ fire</button>
+      <button data-act="left">←</button><button data-act="hold">hold</button><button data-act="right">→</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:6px">keys: ← → space (queued into the loop, source=manual)</div>
+  </section>
+
+  <section class="panel">
+    <h2>state as the model sees it</h2>
+    <div id="prose" class="prose muted">press start</div>
+    <div class="kv">
+      <div>action</div><div><b id="v-action">–</b> <span id="v-source" class="muted"></span></div>
+      <div>mode</div><div><span id="v-mode" class="mode">engage</span></div>
+      <div>features</div><div id="v-feat" class="muted" style="font-variant-numeric:tabular-nums">–</div>
+      <div>health</div><div id="v-health" class="muted">–</div>
+    </div>
+    <h2 style="margin-top:12px">typed answers</h2>
+    <div id="bars" class="bars"><div class="muted" style="font-size:12px">no model answer yet</div></div>
+    <h2 style="margin-top:12px">decision log</h2>
+    <div class="log">
+      <table><thead><tr><th>step</th><th>action</th><th>src</th><th>mode</th><th>score</th><th>ms</th><th>p</th></tr></thead>
+      <tbody id="log"></tbody></table>
+    </div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const cfg = () => ({
+  env: $('env').value, policy: $('policy').value, supervisor: $('supervisor').value || null,
+  state_format: $('state_format').value, threshold: parseFloat($('threshold').value),
+  steps: parseInt($('steps').value), supervisor_every: parseInt($('supervisor_every').value),
+  hold_ms: parseInt($('hold_ms').value), seed: 0,
+});
+let running = false, decCount = 0;
+const setRunning = (r) => { running = r; $('start').disabled = r; $('stop').disabled = !r; };
+
+function banner(msg, kind){ const b = $('banner'); if(!msg){ b.style.display='none'; return; }
+  b.className = 'banner ' + (kind||'ok'); b.textContent = msg; }
+
+$('start').onclick = async () => {
+  banner(''); decCount = 0; $('log').innerHTML = '';
+  const r = await (await fetch('/api/start', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(cfg())})).json();
+  if (r.ok) { setRunning(true); banner('running: ' + cfg().env + ' / ' + cfg().policy
+    + (cfg().supervisor ? ' + ' + cfg().supervisor : ''), 'ok'); }
+  else banner(r.error || 'could not start', 'err');
+};
+$('stop').onclick = async () => { await fetch('/api/stop', {method:'POST'}); banner('stopping…'); };
+const manual = async (a) => { await fetch('/api/manual', {method:'POST', headers:{'Content-Type':'application/json'},
+  body: JSON.stringify({action:a})}); };
+document.querySelectorAll('.pad button').forEach(b => b.onclick = () => manual(b.dataset.act));
+addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') manual(e.shiftKey ? 'left_fire' : 'left');
+  else if (e.key === 'ArrowRight') manual(e.shiftKey ? 'right_fire' : 'right');
+  else if (e.key === ' ') { manual('fire'); e.preventDefault(); }
+});
+
+function bars(probs, threshold){
+  const host = $('bars');
+  if (!probs || !Object.keys(probs).length) { host.innerHTML = '<div class="muted" style="font-size:12px">no typed answers</div>'; return; }
+  const rows = Object.entries(probs).filter(([k,v]) => typeof v === 'number');
+  const label = Object.entries(probs).filter(([k,v]) => typeof v === 'string');
+  host.innerHTML = rows.map(([k,v]) =>
+    `<div class="bar"><span class="muted">${k}</span>
+       <span class="track"><span class="fill ${v>=threshold?'hot':''}" style="width:${Math.max(0,Math.min(1,v))*100}%"></span></span>
+       <span class="num">${v.toFixed(3)}</span></div>`).join('')
+   + (label.length ? `<div class="muted" style="font-size:11px">${label.map(([k,v])=>k+'='+v).join(' · ')}</div>` : '');
+}
+
+function pushLog(e){
+  const tr = document.createElement('tr');
+  const p = e.meta && e.meta.probs ? JSON.stringify(e.meta.probs) : '';
+  const lat = e.meta && e.meta.latency_ms ? e.meta.latency_ms : '';
+  tr.innerHTML = `<td>${e.step}</td><td><b>${e.action}</b></td>
+    <td class="src-${e.source}">${e.source}</td><td>${e.mode}</td><td>${e.score}</td>
+    <td>${lat}</td><td class="muted" title="${p}">${p.length>34?p.slice(0,34)+'…':p}</td>`;
+  const body = $('log'); body.prepend(tr);
+  while (body.rows.length > 120) body.deleteRow(-1);
+}
+
+function summary(s){
+  $('k-score').textContent = s.score ?? 0;
+  $('k-step').textContent = s.steps ?? 0;
+  $('k-dec').textContent = s.decisions ?? 0;
+  $('k-lat').textContent = s.mean_latency_ms ?? '–';
+  $('k-cost').textContent = '$' + (s.cost_usd ?? 0).toFixed(4);
+  $('k-err').textContent = s.errors ?? 0;
+}
+
+const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+ws.onmessage = (m) => {
+  const e = JSON.parse(m.data);
+  if (e.type === 'ping') return;
+  if (e.type === 'obs') {
+    $('prose').textContent = e.prose || '';
+    if (e.ascii) { $('ascii').textContent = e.ascii; $('ascii').style.display='block'; }
+    if (e.frame) { $('frame').src = 'data:image/png;base64,' + e.frame; $('frame').style.display='block'; }
+    if (e.features) $('v-feat').textContent = JSON.stringify(e.features);
+    summary({score: e.score});
+  } else if (e.type === 'decision') {
+    $('v-action').textContent = e.action;
+    $('v-source').textContent = '(' + e.source + ')';
+    const md = $('v-mode'); md.textContent = e.mode; md.className = 'mode ' + e.mode;
+    $('prose').textContent = e.prose || $('prose').textContent;
+    if (e.meta) bars(e.meta.probs, e.meta.threshold ?? 0.5);
+    pushLog(e); decCount++;
+    $('k-dec').textContent = decCount;
+    if (e.score != null) $('k-score').textContent = e.score;
+  } else if (e.type === 'mode') {
+    const md = $('v-mode'); md.textContent = e.mode; md.className = 'mode ' + e.mode;
+  } else if (e.type === 'started') {
+    const h = e.reflex_health || {};
+    $('v-health').textContent = h.policy + ': ' + (h.available ? (h.detail || 'available')
+      : 'UNAVAILABLE — ' + (h.detail || ''));
+  } else if (e.type === 'summary') {
+    summary(e);
+  } else if (e.type === 'error') {
+    banner(e.error, 'err'); setRunning(false);
+  } else if (e.type === 'finished') {
+    summary(e.summary || {}); setRunning(false);
+    banner('finished: ' + JSON.stringify((e.summary || {}).stop_reason || '') , e.error ? 'err' : 'ok');
+  }
+};
+ws.onopen = () => banner('connected');
+ws.onclose = () => banner('websocket closed', 'err');
+</script>
+</body>
+</html>

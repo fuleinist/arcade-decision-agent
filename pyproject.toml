@@ -5,7 +5,7 @@ description = "Play browser arcade games with typed-decision models: local Laya 
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
-authors = [{ name = "Chris Chen", email = "1163738+fuleinist@users.noreply.github.com" }]
+authors = [{ name = "fuleinist" }]
 keywords = ["laya", "jev", "decisions-api", "arcade", "agent", "emulator", "mame"]
 classifiers = [
   "License :: OSI Approved :: Apache Software License",

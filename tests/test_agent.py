@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import json
 
 import pytest
 
@@ -93,11 +94,36 @@ def test_supervisor_switches_mode_on_threat():
 
 
 # --------------------------------------------------------------- adapters -------
-def test_laya_policy_reports_unavailable_without_binary():
-    p = LayaPolicy(exe="Z:/nope/laya.exe", model="Z:/nope/model.gguf")
+def test_laya_policy_reports_unavailable_without_binary_and_model():
+    p = LayaPolicy(exe="no-such-dir/laya.exe", model="no-such-dir/model.gguf")
     assert not p.available
+    assert "no Laya model" in p.detail
     a = p.decide(_dummy_obs(), ["hold"])
     assert a.name == "hold" and a.meta.get("unavailable")
+
+
+def test_laya_policy_takes_its_paths_from_the_environment(monkeypatch, tmp_path):
+    fake_exe = tmp_path / "laya.exe"
+    fake_model = tmp_path / "model.gguf"
+    fake_exe.write_bytes(b"stub")
+    fake_model.write_bytes(b"stub")
+    monkeypatch.setenv("LAYA_EXE", str(fake_exe))
+    monkeypatch.setenv("LAYA_MODEL", str(fake_model))
+    p = LayaPolicy()
+    assert str(fake_exe) == p.exe and str(fake_model) == p.model
+    assert p.available, p.detail
+    # the reported health carries file names, not the operator's directories
+    h = p.health()
+    assert h["exe"] == "laya.exe" and h["model"] == "model.gguf"
+    assert str(tmp_path) not in json.dumps(h)
+
+
+def test_laya_policy_without_configuration_says_so(monkeypatch):
+    monkeypatch.delenv("LAYA_EXE", raising=False)
+    monkeypatch.delenv("LAYA_MODEL", raising=False)
+    p = LayaPolicy()
+    assert not p.available
+    assert "LAYA_MODEL" in p.detail
 
 
 def test_remote_policies_disabled_without_keys(monkeypatch):

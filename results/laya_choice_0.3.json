@@ -7,8 +7,8 @@
     "available": true,
     "vision": false,
     "detail": "",
-    "exe": "G:/dev/AI/laya/layabin/laya.exe",
-    "model": "G:/dev/AI/laya/laya_multilingual_q8_0.gguf",
+    "exe": "laya.exe",
+    "model": "laya_multilingual_q8_0.gguf",
     "threshold": 0.3,
     "state_format": "prose",
     "stats": {

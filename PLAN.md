@@ -289,7 +289,7 @@ single-tier setup, or we state that the supervisor tier does not earn its latenc
 
 | | milestone | verification |
 |---|---|---|
-| **M0** | done. Harness, stub, three policy adapters, eval and dashboard | 18 unit tests pass. Seven eval runs recorded in `results/`. The dashboard smoke test above |
+| **M0** | done. Harness, stub, three policy adapters, eval and dashboard | 20 unit tests pass. Seven eval runs recorded in `results/`. The dashboard smoke test above |
 | **M1** | done. The live-page adapter reaches the emulator | The MAME module loads. `HEAPU8` reads 29 MB. Save state returns true, and load state returns true. Keys arrive. The adapter captures frames |
 | **M2** | RAM perception: locate Galaga's video RAM and work RAM inside the heap, then emit prose from it | A prose state that follows a real game after a coin insert. A ship position that moves in the correct direction while you hold a key |
 | **M3** | deterministic episodes on the live target, through `mame_save` and `mame_load` | Two episodes from the same state file produce identical decisions for a deterministic policy |
@@ -306,7 +306,7 @@ single-tier setup, or we state that the supervisor tier does not earn its latenc
 | ROM legality | Ship the harness, never a ROM. Use your own files, or a homebrew or public-domain title such as a Pong or Breakout clone, for anything you share |
 | No API keys exist in this shell environment. I looked for `TYPESAFE_API_KEY`, `OPENAI_API_KEY` and `OPENROUTER_API_KEY`, and all three are absent | I wrote both remote tiers and unit-tested them against fakes, and they report `no API key (set …)` in the UI. To wire them, set `TYPESAFE_API_KEY` or `OPENAI_API_KEY`. You can also point base_url at OpenRouter `/api/alpha/decisions` or at a local LiteLLM `/v1/systemone` |
 | Cost from a per-frame network policy | The loop supervises the reflex by design. The eval prints `cost_usd` for each episode, and the dashboard shows the cost live. At 30 Hz, a rate of $0.042 for each 1M tokens would still produce a real bill |
-| GPU contention with ComfyUI on the same 3090 | VRAM exhaustion is the failure mode, not compute. Laya's daemon can stall past the timeout under pressure. `LAYA_CPU_FALLBACK=0` makes it fail fast instead of degrading by about 16 times. The eval reports the error count in either case |
+| GPU contention on a shared card | VRAM exhaustion is the failure mode, not compute. Laya's daemon can stall past the timeout under pressure from another workload. `LAYA_CPU_FALLBACK=0` makes it fail fast instead of degrading by about 16 times. The eval reports the error count in either case |
 | Over-calling the model | This is the measured failure mode of the tool class. Ask 1 to 3 short questions for each call. Keep `choice` small. Skip the model for a deterministic read, which is why firing is the harness's job by default |
 
 ## 10. Decisions I need from you
@@ -327,7 +327,9 @@ single-tier setup, or we state that the supervisor tier does not earn its latenc
 
 ```bash
 # local Laya: can it answer a custom typed question? Yes, in 12 ms to 19 ms.
-G:/dev/AI/laya/layabin/laya.exe daemon G:/dev/AI/laya/laya_multilingual_q8_0.gguf --device auto
+export LAYA_EXE=/path/to/layabin/laya.exe         # omit when `laya` is on PATH
+export LAYA_MODEL=/path/to/laya_multilingual_q8_0.gguf
+"$LAYA_EXE" daemon "$LAYA_MODEL" --device auto
 # then send one JSON object for each line on stdin:
 {"id":1,"state":"The player ship is far to the left of the nearest enemy.",
  "questions":{"move_right":{"type":"noul","instructions":"The player ship is left of the enemy and must move right now."}}}
@@ -335,10 +337,10 @@ G:/dev/AI/laya/layabin/laya.exe daemon G:/dev/AI/laya/laya_multilingual_q8_0.ggu
 # the project
 git clone https://github.com/fuleinist/arcade-decision-agent.git
 cd arcade-decision-agent
-uv venv .venv --python 3.12 && uv pip install --python .venv/Scripts/python.exe -r requirements.txt
-.venv/Scripts/python.exe -m pytest -q                     # 18 pass
-.venv/Scripts/python.exe -m agent.eval --env stub --policy scripted --episodes 3
-.venv/Scripts/python.exe -m agent.server --port 8770      # then open http://127.0.0.1:8770
+uv venv .venv --python 3.12 && uv pip install -r requirements.txt
+uv run python -m pytest -q                     # 20 pass
+uv run python -m agent.eval --env stub --policy scripted --episodes 3
+uv run python -m agent.server --port 8770      # then open http://127.0.0.1:8770
 
 # what the target page exposes. Paste this into the page console.
 Object.keys(window.Module).filter(k => /SDL_SendKeyboardKey|emscripten_save|HEAPU8/.test(k))

@@ -12,12 +12,17 @@ shows how to run the code.
 ```bash
 git clone https://github.com/fuleinist/arcade-decision-agent.git
 cd arcade-decision-agent
-uv venv .venv --python 3.12
-uv pip install --python .venv/Scripts/python.exe -r requirements.txt
 
-.venv/Scripts/python.exe -m pytest -q                       # unit tests
-.venv/Scripts/python.exe -m agent.server --port 8770        # then open http://127.0.0.1:8770
+uv venv .venv --python 3.12
+uv pip install -r requirements.txt
+
+uv run python -m pytest -q                       # unit tests
+uv run python -m agent.server --port 8770        # then open http://127.0.0.1:8770
 ```
+
+Cross-platform: the commands use `uv run`, which finds the project virtual environment. The
+interpreter lives in `Scripts/` inside that environment on Windows, and in `bin/` on Linux or
+macOS.
 
 In the dashboard, pick `env=stub` and `policy=laya`. Press **start**. The left panel shows the
 playfield and the KPIs. The right panel shows the exact sentence that the model received, the
@@ -26,12 +31,11 @@ option probabilities and the decision log.
 ## Run episodes from the CLI
 
 ```bash
-P=.venv/Scripts/python.exe
-$P -m agent.eval --env stub --policy scripted --episodes 3            # the thing to beat
-$P -m agent.eval --env stub --policy laya --questions choice3 --threshold 0.5
-$P -m agent.eval --env stub --policy laya --state-format json         # the wording ablation
-$P -m agent.eval --env stub --policy laya --supervisor jev            # tiered reflex and judge
-$P -m agent.eval --env page --policy scripted --headed --steps 20     # the live page
+uv run python -m agent.eval --env stub --policy scripted --episodes 3            # the thing to beat
+uv run python -m agent.eval --env stub --policy laya --questions choice3 --threshold 0.5
+uv run python -m agent.eval --env stub --policy laya --state-format json         # the wording ablation
+uv run python -m agent.eval --env stub --policy laya --supervisor jev            # tiered reflex and judge
+uv run python -m agent.eval --env page --policy scripted --headed --steps 20     # the live page
 ```
 
 ## Keys and paths for the local and remote tiers
@@ -40,7 +44,7 @@ $P -m agent.eval --env page --policy scripted --headed --steps 20     # the live
 |---|---|---|
 | `jev` | `TYPESAFE_API_KEY` | $0.042 for each 1M input tokens. `jev:openrouter` uses `OPENROUTER_API_KEY`. `jev:litellm` uses a local LiteLLM |
 | `luna` | `OPENAI_API_KEY` | $0.10 for each 1M input tokens. This tier alone accepts an image, through `--send-image` |
-| `laya` | `LAYA_EXE`, `LAYA_MODEL` | Optional. The code defaults to `G:/dev/AI/laya/layabin/laya.exe` and `G:/dev/AI/laya/laya_multilingual_q8_0.gguf`, which are the paths on the author's machine. Set both to run Laya from anywhere else. Get the binary and the GGUF from [monatis/ggmlc](https://github.com/monatis/ggmlc) and [mys/laya-multilingual-GGUF](https://huggingface.co/mys/laya-multilingual-GGUF) |
+| `laya` | `LAYA_EXE`, `LAYA_MODEL` | Required for this tier, because the binary and the model live wherever you put them. `LAYA_MODEL` is the path to the `.gguf` file. `LAYA_EXE` is the path to the ggmlc binary, or nothing at all when `laya` is on `PATH`. The policy reports itself unavailable, with the reason, when either one is missing. Get the binary from [monatis/ggmlc](https://github.com/monatis/ggmlc) and the model from [mys/laya-multilingual-GGUF](https://huggingface.co/mys/laya-multilingual-GGUF) |
 
 Without keys, both remote tiers stay visible in `/api/health` and report the reason. The loop
 continues to run on `scripted` or `laya`.

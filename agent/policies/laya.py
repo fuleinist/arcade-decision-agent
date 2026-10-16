@@ -1,17 +1,25 @@
 """Local Laya (ggmlc) as the reflex tier: one typed question per frame, ~10-30 ms.
 
-Measured on this machine, 2026-10-16, `layabin/laya.exe` + `laya_multilingual_q8_0.gguf`:
+Measured on 2026-10-16 with the ggmlc engine, the multilingual Q8_0 GGUF and an RTX 3090:
 one-sentence prose state separates the two directions by +0.526 (0.833 vs 0.307),
 the same facts as a JSON dict by -0.199 and as bare numbers by -0.088. The JSON path is
 kept only as a switch, so the ablation in eval.py can re-measure that claim rather than
 trusting this comment.
 
 The daemon is one long-lived child process speaking newline-delimited JSON on stdio.
+
+Configuration comes from the environment, because the binary and the model live wherever the
+operator put them:
+    LAYA_EXE    full path to the ggmlc binary, or a directory to search with LAYA_EXE, or
+                nothing at all when `laya` is on PATH
+    LAYA_MODEL  full path to the .gguf file
+The policy reports itself unavailable, with the reason, when either one is missing.
 """
 from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import threading
 import time
@@ -21,8 +29,10 @@ from ..obs import Action, Obs
 from ..perceive import threat_prose
 from .base import Policy, combine
 
-DEFAULT_EXE = r"G:/dev/AI/laya/layabin/laya.exe"
-DEFAULT_MODEL = r"G:/dev/AI/laya/laya_multilingual_q8_0.gguf"
+
+def resolve_exe(explicit: Optional[str] = None) -> str:
+    """Explicit argument, then LAYA_EXE, then `laya` on PATH. Never a hard-coded path."""
+    return explicit or os.environ.get("LAYA_EXE") or shutil.which("laya") or "laya"
 
 
 class LayaPolicy(Policy):
@@ -32,8 +42,8 @@ class LayaPolicy(Policy):
                  threshold: float = 0.5, state_format: str = "prose",
                  timeout_ms: int = 2000, device: str = "auto",
                  questions_design: str = "choice3", fire_mode: str = "aligned") -> None:
-        self.exe = exe or os.environ.get("LAYA_EXE", DEFAULT_EXE)
-        self.model = model or os.environ.get("LAYA_MODEL", DEFAULT_MODEL)
+        self.exe = resolve_exe(exe)
+        self.model = model or os.environ.get("LAYA_MODEL") or ""
         self.threshold = threshold
         self.state_format = state_format
         self.timeout_ms = timeout_ms
@@ -52,12 +62,19 @@ class LayaPolicy(Policy):
         self._lock = threading.Lock()
         self._rid = 0
         self.stats = {"calls": 0, "total_ms": 0.0, "errors": 0, "last_ms": 0.0}
-        if not os.path.exists(self.exe):
+        if not self.model:
             self.available = False
-            self.detail = f"laya.exe not found at {self.exe}"
+            self.detail = "no Laya model (set LAYA_MODEL to the .gguf file)"
         elif not os.path.exists(self.model):
             self.available = False
-            self.detail = f"GGUF not found at {self.model}"
+            self.detail = f"no Laya model at {self.model}"
+        elif os.sep in self.exe or "/" in self.exe:
+            if not os.path.exists(self.exe):
+                self.available = False
+                self.detail = f"no Laya binary at {self.exe}"
+        elif not shutil.which(self.exe):
+            self.available = False
+            self.detail = f"no Laya binary named {self.exe} on PATH (set LAYA_EXE)"
 
     # ------------------------------------------------------------------ daemon ---
     def _ensure(self) -> None:
@@ -230,7 +247,9 @@ class LayaPolicy(Policy):
 
     def health(self) -> dict:
         h = super().health()
-        h.update({"exe": self.exe, "model": self.model, "threshold": self.threshold,
+        h.update({"exe": os.path.basename(self.exe) or self.exe,
+                  "model": os.path.basename(self.model) or self.model,
+                  "threshold": self.threshold,
                   "state_format": self.state_format, "stats": self.stats})
         return h
 
